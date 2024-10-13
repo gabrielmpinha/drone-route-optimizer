@@ -1,20 +1,12 @@
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.problem import Problem
 from pymoo.optimize import minimize
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PM
-from pymoo.operators.selection.tournament import TournamentSelection
-from pymoo.operators.sampling.rnd import FloatRandomSampling, IntegerRandomSampling
-from pymoo.core.variable import Real, Choice, Integer
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.core.problem import Problem
+from pymoo.optimize import minimize
+from pymoo.core.variable import Real, Integer
 import numpy as np
-from pymoo.operators.crossover.erx import EdgeRecombinationCrossover
-from pymoo.operators.sampling.rnd import PermutationRandomSampling
-from pymoo.operators.mutation.inversion import InversionMutation
-import random
 from pymoo.visualization.scatter import Scatter
-import numpy as np
-from pymoo.core.crossover import Crossover
-from pymoo.core.population import Population
 
 # Define 3D coordinates for cities
 locacoes_cidades = {
