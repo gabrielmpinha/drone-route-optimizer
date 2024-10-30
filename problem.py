@@ -1,26 +1,13 @@
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.core.problem import Problem
 from pymoo.optimize import minimize
-from pymoo.core.variable import Real, Integer
 import numpy as np
-from pymoo.visualization.scatter import Scatter
 import matplotlib.pyplot as plt
-from pymoo.operators.sampling.rnd import IntegerRandomSampling
-from pymoo.operators.crossover.sbx import SBX
-
 from pymoo.operators.mutation.pm import PolynomialMutation as PM
 from pymoo.operators.repair.rounding import RoundingRepair
-
 from pymoo.operators.sampling.rnd import PermutationRandomSampling
-from pymoo.operators.crossover.ox import OrderCrossover
-from pymoo.operators.mutation.inversion import InversionMutation
 from pymoo.core.crossover import Crossover
-import numpy as np
-from pymoo.core.population import Population
-from pymoo.core.mutation import Mutation
 
-import numpy as np
-from pymoo.core.crossover import Crossover
 
 
 class PMXCrossover(Crossover):
