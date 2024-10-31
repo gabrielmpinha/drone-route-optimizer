@@ -166,56 +166,78 @@ altura_decolagem = 10  # Altura que o drone vai subir na transição
 peso_drone = 1.5
 
 
-def calcular_decolagem2(massa_drone, aceleracao, altura_voo, altura_cidade):
+def calcular_decolagem(massa, aceleracao, altura_voo, altura_cidade):
     g = 9.81  # Aceleração da gravidade em m/s^2
 
     # Altura total
     altura_total = altura_voo - altura_cidade
 
-    aceleracao = aceleracao/100 - g
-    if aceleracao <= 0:
-        raise ValueError("A aceleração resultante deve ser maior que zero.")
+    aceleracao = (aceleracao/100) - g
 
-    # Tempo de subida MRUV
-    tempo_subida = math.sqrt(2 * altura_total / aceleracao)
+
+    # Tempo de subida MRUV (considerando aceleração constante)
+    tempo_subida = (2 * altura_total / aceleracao)
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2))/2)
 
-    energia_gravitacional = massa_drone * g * altura_total
+    energia_gravitacional = massa * g * altura_total
     potencia_elevacao = energia_gravitacional / tempo_subida # potencia para elevar um drone a altura total em uma unidade de tempo
     
     # Energia gasta considerando velocidade angular constante
-    energia_gasta = (energia_rotacional+potencia_elevacao) * tempo_subida
+    energia_gasta = (energia_rotacional + potencia_elevacao) * tempo_subida
 
     return energia_gasta, tempo_subida
 
-def calcular_decolagem_old(massa, aceleracao, altura_voo, altura_cidade):
-    gravidade=9.81
-    aceleracao = aceleracao/100 - gravidade
-    if aceleracao <= 0:
-        raise ValueError("A aceleração resultante deve ser maior que zero.")
+def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
+    g = 9.81  # Aceleração da gravidade em m/s^2
+
+    # Altura total
+    altura_total = altura_voo - altura_cidade
+
+    # Aceleração durante a descida
+    aceleracao = (aceleracao / 100) + g
+
+
+
+    # Tempo de descida MRUV (considerando aceleração constante)
+    tempo_descida = (2 * altura_total / aceleracao)
 
     momento_inercia, velocidade_angular = rot_drone()
+    energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
 
-    tempo = ((2 * (altura_voo - altura_cidade)) / aceleracao) ** 0.5 # segundos
-    energia_rotacional = 0.5 * momento_inercia * velocidade_angular ** 2 # Joules
-    energia_potencial = massa * gravidade * (altura_voo - altura_cidade)  # Joules
-    energia = energia_rotacional + energia_potencial
-    return energia, tempo
+    energia_gravitacional = massa * g * altura_total
+    potencia_descida = energia_gravitacional / tempo_descida  # Potência para descer o drone a altura total em uma unidade de tempo
+    
+    # Energia gasta considerando velocidade angular constante
+    energia_gasta = (energia_rotacional + potencia_descida) * tempo_descida
 
-def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
-    gravidade=9.81
-    aceleracao = aceleracao/100 + gravidade
-    tempo = ((2 * (altura_voo - altura_cidade)) / aceleracao) ** 0.5
-    energia = massa * aceleracao * tempo
-    return (energia/2), (tempo/2)
+    return energia_gasta, tempo_descida
 
 def calcular_deslocamento(massa, aceleracao, distancia):
-    aceleracao = aceleracao/100
-    tempo = ((2 * distancia) / aceleracao) ** 0.5 
-    energia = massa * aceleracao * tempo
-    return energia, tempo
+    g = 9.81  # Aceleração da gravidade em m/s^2
+
+    aceleracao = (aceleracao / 100) - g 
+
+
+
+    # Tempo de deslocamento (considerando aceleração constante)
+    tempo_deslocamento = (2 * distancia / aceleracao)
+
+    momento_inercia, velocidade_angular = rot_drone()
+    energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
+
+    energia_gravitacional = massa * g * altura_decolagem 
+
+    if (tempo_deslocamento != 0):
+        potencia_deslocamento = energia_gravitacional / tempo_deslocamento  # Potência para manter o drone em voo contra a gravidade
+    else:
+        potencia_deslocamento = 0
+    
+    # Energia gasta considerando velocidade angular constante
+    energia_gasta = (energia_rotacional + potencia_deslocamento) * tempo_deslocamento
+
+    return energia_gasta, tempo_deslocamento
 
 
 def rot_drone(massa_pa = 0.1, comprimento_pa = 0.5, rpm = 3000):
