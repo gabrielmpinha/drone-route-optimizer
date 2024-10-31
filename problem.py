@@ -7,8 +7,7 @@ from pymoo.operators.mutation.pm import PolynomialMutation as PM
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.sampling.rnd import PermutationRandomSampling
 from pymoo.core.crossover import Crossover
-
-
+import math
 
 class PMXCrossover(Crossover):
 
@@ -166,14 +165,48 @@ altura_decolagem = 10  # Altura que o drone vai subir na transição
 
 peso_drone = 1.5
 
-def calcular_decolagem(massa, aceleracao, altura_voo, altura_cidade):
-    aceleracao = aceleracao/100
-    tempo = ((2 * (altura_voo - altura_cidade)) / aceleracao) ** 0.5
-    energia = massa * aceleracao * tempo # formula baseada na rotação das pás do drone
+
+def calcular_decolagem2(massa_drone, aceleracao, altura_voo, altura_cidade):
+    g = 9.81  # Aceleração da gravidade em m/s^2
+
+    # Altura total
+    altura_total = altura_voo - altura_cidade
+
+    aceleracao = aceleracao/100 - g
+    if aceleracao <= 0:
+        raise ValueError("A aceleração resultante deve ser maior que zero.")
+
+    # Tempo de subida MRUV
+    tempo_subida = math.sqrt(2 * altura_total / aceleracao)
+
+    momento_inercia, velocidade_angular = rot_drone()
+    energia_rotacional = ((momento_inercia * (velocidade_angular ** 2))/2)
+
+    energia_gravitacional = massa_drone * g * altura_total
+    potencia_elevacao = energia_gravitacional / tempo_subida # potencia para elevar um drone a altura total em uma unidade de tempo
+    
+    # Energia gasta considerando velocidade angular constante
+    energia_gasta = (energia_rotacional+potencia_elevacao) * tempo_subida
+
+    return energia_gasta, tempo_subida
+
+def calcular_decolagem_old(massa, aceleracao, altura_voo, altura_cidade):
+    gravidade=9.81
+    aceleracao = aceleracao/100 - gravidade
+    if aceleracao <= 0:
+        raise ValueError("A aceleração resultante deve ser maior que zero.")
+
+    momento_inercia, velocidade_angular = rot_drone()
+
+    tempo = ((2 * (altura_voo - altura_cidade)) / aceleracao) ** 0.5 # segundos
+    energia_rotacional = 0.5 * momento_inercia * velocidade_angular ** 2 # Joules
+    energia_potencial = massa * gravidade * (altura_voo - altura_cidade)  # Joules
+    energia = energia_rotacional + energia_potencial
     return energia, tempo
 
 def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
-    aceleracao = aceleracao/100
+    gravidade=9.81
+    aceleracao = aceleracao/100 + gravidade
     tempo = ((2 * (altura_voo - altura_cidade)) / aceleracao) ** 0.5
     energia = massa * aceleracao * tempo
     return (energia/2), (tempo/2)
@@ -184,13 +217,19 @@ def calcular_deslocamento(massa, aceleracao, distancia):
     energia = massa * aceleracao * tempo
     return energia, tempo
 
+
+def rot_drone(massa_pa = 0.1, comprimento_pa = 0.5, rpm = 3000):
+    # Cálculo do momento de inércia
+    momento_inercia = (1/3) * massa_pa * (comprimento_pa ** 2)
+    # Cálculo da velocidade angular
+    velocidade_angular = (2 * math.pi * rpm) / 60
+    return momento_inercia, velocidade_angular
+
 # Função para calcular a distância entre duas posições, inicialmente ignorando altura
-# Dar uma olhada no np.linalg.norm
-# modificar p hipotenusa
 def calcular_distancia(pos1 = (0,0,0), pos2 = (0,0,0)):
     posx = abs(pos1[0] - pos2[0])
     posy = abs(pos1[1] - pos2[1])
-    distancia = posx + posy
+    distancia = math.sqrt(posx**2 + posy**2)
     return distancia
 
 class DroneOptimizationProblem(Problem):
