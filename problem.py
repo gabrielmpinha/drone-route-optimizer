@@ -17,26 +17,25 @@ class PMXCrossover(Crossover):
 
     def _do(self, problem, X, **kwargs):
         n_matings, n_parents, n_var = X.shape
-        Y = np.full_like(X, 0, dtype=object)
+        Y = np.full_like(X, 0, dtype=X.dtype)
 
-        for k in range(n_matings):
-            if np.random.random() < self.prob:
-                if n_parents > 1:
-                    parent1, parent2 = X[k, 0, :-1], X[k, 1, :-1]
-                    accel1, accel2 = X[k, 0, -1], X[k, 1, -1]
-                    child1, child2 = self.pmx(parent1, parent2)
-                    Y[k, 0, :-1], Y[k, 1, :-1] = child1, child2
-                    Y[k, 0, -1], Y[k, 1, -1] = accel1, accel2
+        for p in range(n_parents):
+                if np.random.random() < self.prob:
+                    if n_parents > 1:
+                        parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
+                        accel1, accel2 = X[0, p, -1], X[1, p, -1]
+                        child1, child2 = self.pmx(parent1, parent2)
+                        Y[0, p, :-1], Y[1, p, :-1] = child1, child2
+                        Y[0, p, -1], Y[1, p, -1] = accel1, accel2
+                    else:
+                        parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
+                        accel1, accel2 = X[0, p, -1], X[1, p, -1]
+                        child1, child2 = self.pmx(parent1, parent2)
+                        Y[0, p, :-1], Y[1, p, :-1] = child1, child2
+                        Y[0, p, -1], Y[1, p, -1] = accel1, accel2
                 else:
-                    parent1, parent2 = X[k, 0, :-1], X[k, 0, :-1]
-                    accel1, accel2 = X[k, 0, -1], X[k, 0, -1]
-                    child1, child2 = self.pmx(parent1, parent2)
-                    Y[k, 0, :-1], Y[k, 0, :-1] = child1, child2
-                    Y[k, 0, -1], Y[k, 0, -1] = accel1, accel2
-
-
-            else:
-                Y[k, 0, :], Y[k, 1, :] = X[k, 0, :], X[k, 1, :]
+                    Y[0, p, :], Y[1, p, :] = X[0, p, :], X[1, p, :]
+                    Y[0, p, -1], Y[1, p, -1] = X[0, p, -1], X[1, p, -1]
 
         return Y
        
@@ -153,7 +152,7 @@ locacoes_cidades = {
     "Cidade47": (6, 17, 0),
     "Cidade48": (14, 30, 0),
     "Cidade49": (24, 27, 0),
-    "Cidade50": (10, 15, 0)
+    "Cidade50": (10, 15, 0),
 }
 
 initial_pos = (7, 7, 0)
@@ -174,9 +173,11 @@ def calcular_decolagem(massa, aceleracao, altura_voo, altura_cidade):
 
     aceleracao = (aceleracao/100) - g
 
+    if aceleracao <= 0:
+        raise ValueError("A aceleração resultante deve ser maior que zero.")
 
     # Tempo de subida MRUV (considerando aceleração constante)
-    tempo_subida = (2 * altura_total / aceleracao)
+    tempo_subida = ((2 * altura_total / aceleracao))** 0.5
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2))/2)
@@ -198,10 +199,11 @@ def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
     # Aceleração durante a descida
     aceleracao = (aceleracao / 100) + g
 
-
+    if aceleracao <= 0:
+        raise ValueError("A aceleração resultante deve ser maior que zero.")
 
     # Tempo de descida MRUV (considerando aceleração constante)
-    tempo_descida = (2 * altura_total / aceleracao)
+    tempo_descida = ((2 * altura_total / aceleracao))** 0.5
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
@@ -219,10 +221,13 @@ def calcular_deslocamento(massa, aceleracao, distancia):
 
     aceleracao = (aceleracao / 100) - g 
 
+    distancia = distancia*1000
 
+    if aceleracao <= 0:
+        raise ValueError("A aceleração resultante deve ser maior que zero.")
 
     # Tempo de deslocamento (considerando aceleração constante)
-    tempo_deslocamento = (2 * distancia / aceleracao)
+    tempo_deslocamento = ((2 * distancia / aceleracao))** 0.5
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
@@ -240,12 +245,12 @@ def calcular_deslocamento(massa, aceleracao, distancia):
     return energia_gasta, tempo_deslocamento
 
 
-def rot_drone(massa_pa = 0.1, comprimento_pa = 0.5, rpm = 3000):
+def rot_drone(massa_pa = 1, comprimento_pa = 0.5, rpm = 3000):
     # Cálculo do momento de inércia
     momento_inercia = (1/3) * massa_pa * (comprimento_pa ** 2)
     # Cálculo da velocidade angular
     velocidade_angular = (2 * math.pi * rpm) / 60
-    return momento_inercia, velocidade_angular
+    return momento_inercia, momento_inercia
 
 # Função para calcular a distância entre duas posições, inicialmente ignorando altura
 def calcular_distancia(pos1 = (0,0,0), pos2 = (0,0,0)):
@@ -320,6 +325,7 @@ class DroneOptimizationProblem(Problem):
             consumo_energia_total.append(consumo_energia) # Armazena o consumo da solução
             constraints = 0
             if sorted(set(ordem_cidades)) != sorted(set(nomes_cidades)):
+                print("Cidades faltando")
                 constraints += 1
             constraints_violadas.append(constraints)
 
@@ -328,16 +334,16 @@ class DroneOptimizationProblem(Problem):
 
 # Configurar o algoritmo NSGA-II
 algorithm = NSGA2(
-    pop_size=100, # tamanho de soluções em cada geraçao
+    pop_size=50, # tamanho de soluções em cada geraçao
     eliminate_duplicates=True,
     sampling=CustomPermutationRandomSampling(),
-    crossover=PMXCrossover(),
-    mutation=PM(eta=20, prob=0.1, vtype=int, repair=RoundingRepair())
+    crossover=PMXCrossover(prob=0.9),
+    mutation=PM(eta=20, prob=0.0, vtype=int, repair=RoundingRepair())
 )
 
 # Resolver o problema
 problem = DroneOptimizationProblem()
-res = minimize(problem, algorithm, ('n_gen', 100), verbose=True) # Quantidade de gerações que o alg roda
+res = minimize(problem, algorithm, ('n_gen', 50), verbose=True) # Quantidade de gerações que o alg roda
 # res.X array onde cada linha é uma solução, e cada coluna é uma variável de decisão, a ultima coluna sendo a aceleração
 # res.F array onde cada linha é uma solução, e cada coluna é um objetivo, a primeira coluna sendo o tempo e a segunda a energia
 
@@ -372,6 +378,29 @@ def plot(res):
     plt.show()
 
 plot(res)
+
+def plot_route(solution, locacoes_cidades, initial_pos):
+    ordem_indices = solution[:-1]  # Exclui a última coluna (aceleração)
+    ordem_cidades = [nomes_cidades[j] for j in ordem_indices]
+
+    # Coordenadas das cidades
+    x_coords = [initial_pos[0]] + [locacoes_cidades[cidade][0] for cidade in ordem_cidades]
+    y_coords = [initial_pos[1]] + [locacoes_cidades[cidade][1] for cidade in ordem_cidades]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_coords, y_coords, marker='o', linestyle='-', color='b')
+    
+    # Adiciona rótulos para cada cidade
+    for i, cidade in enumerate(['Inicial'] + ordem_cidades):
+        plt.text(x_coords[i], y_coords[i], cidade, fontsize=12, ha='right')
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Rota do Drone')
+    plt.grid(True)
+    plt.show()
+
+#plot_route(res.X[0], locacoes_cidades, initial_pos)
 
 
 
