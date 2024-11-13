@@ -4,22 +4,22 @@ import numpy as np
 def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     tempo = res.F[:, 0]
     energia = res.F[:, 1]
-    aceleracao = res.X[:, -1] / 100
+    velocidade = res.X[:, -1] / 100
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
 
     # Segundo gráfico: Rota do Drone para até 3 soluções
-    sorted_indices = np.lexsort((energia, aceleracao))
+    sorted_indices = np.lexsort((energia, velocidade))
     selected_indices = sorted_indices[::len(sorted_indices) // 3][:3]
 
-    # Primeiro gráfico: Tempo x Energia x Aceleração
+    # Primeiro gráfico: Tempo x Energia x velocidade
     edgecolors = ['blue' if i in selected_indices else 'red' for i in range(len(tempo))]
-    scatter = ax1.scatter(tempo, energia, c=aceleracao, cmap='viridis', edgecolor=edgecolors)
+    scatter = ax1.scatter(tempo, energia, c=velocidade, cmap='viridis', edgecolor=edgecolors)
     cbar = plt.colorbar(scatter, ax=ax1)
-    cbar.set_label('Aceleração')
+    cbar.set_label('Velocidade')
     ax1.set_xlabel('Tempo')
     ax1.set_ylabel('Energia')
-    ax1.set_title('Tempo x Energia x Aceleração')
+    ax1.set_title('Tempo x Energia x Velocidade')
 
     annot = ax1.annotate("", xy=(0,0), xytext=(20,20),
                          textcoords="offset points",
@@ -31,7 +31,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         pos = scatter.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         sol_index = ind["ind"][0]
-        text = f"Solução: {sol_index}\nAceleração: {aceleracao[sol_index]:.2f}\nTempo: {tempo[sol_index]:.2f}\nEnergia: {energia[sol_index]:.2f}"
+        text = f"Solução: {sol_index}\nVelocidade: {velocidade[sol_index]:.2f}\nTempo: {tempo[sol_index]:.2f}\nEnergia: {energia[sol_index]:.2f}"
         annot.set_text(text)
         annot.get_bbox_patch().set_facecolor('yellow')
         annot.get_bbox_patch().set_alpha(0.6)
@@ -57,13 +57,13 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     lines = []
 
     for i in selected_indices:
-        ordem_indices = res.X[i, :-1]  # Exclui a última coluna (aceleração)
+        ordem_indices = res.X[i, :-1]  # Exclui a última coluna (velocidade)
         ordem_cidades = [nomes_cidades[j] for j in ordem_indices]
 
         x_coords = [initial_pos[0]] + [locacoes_cidades[cidade][0] for cidade in ordem_cidades] + [initial_pos[0]]
         y_coords = [initial_pos[1]] + [locacoes_cidades[cidade][1] for cidade in ordem_cidades] + [initial_pos[1]]
 
-        color = cmap(norm(aceleracao[i]))
+        color = cmap(norm(velocidade[i]))
         line, = ax2.plot(x_coords, y_coords, marker='o', linestyle='-', color=color, label=f'Solução {i}')
         lines.append(line)
         for j, cidade in enumerate(['Inicial'] + ordem_cidades):

@@ -1,18 +1,21 @@
 import math
 
-def calcular_decolagem(massa, aceleracao, altura_voo, altura_cidade):
+def calcular_decolagem(massa, velocidade, altura_voo, altura_cidade):
     g = 9.81  # Aceleração da gravidade em m/s^2
 
     # Altura total
     altura_total = altura_voo - altura_cidade
 
-    aceleracao = (aceleracao / 100) - g
+    # Calcular a aceleração a partir da velocidade
+    aceleracao = ((velocidade ** 2) / (2 * altura_total))/100 - g
+
+
 
     if aceleracao <= 0:
         raise ValueError("A aceleração resultante deve ser maior que zero.")
 
     # Tempo de subida MRUV (considerando aceleração constante)
-    tempo_subida = ((2 * altura_total / aceleracao))** 0.5
+    tempo_subida = velocidade / aceleracao
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2))/2)
@@ -21,28 +24,27 @@ def calcular_decolagem(massa, aceleracao, altura_voo, altura_cidade):
     potencia_elevacao = energia_gravitacional # potencia para elevar um drone a altura total em uma unidade de tempo
 
     # Energia cinética devido à aceleração
-    velocidade_final = aceleracao * tempo_subida
-    energia_cinetica = 0.5 * massa * (velocidade_final ** 2)
+    energia_cinetica = 0.5 * massa * (velocidade ** 2)
     
     # Energia gasta considerando velocidade angular constante
     energia_gasta = energia_rotacional + (potencia_elevacao * tempo_subida) + energia_cinetica
 
     return (energia_gasta), tempo_subida
 
-def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
+def calcular_pouso(massa, velocidade, altura_voo, altura_cidade):
     g = 9.81  # Aceleração da gravidade em m/s^2
 
     # Altura total
     altura_total = altura_voo - altura_cidade
 
-    # Aceleração durante a descida
-    aceleracao = (aceleracao / 100) + g
+    # Calcular a aceleração a partir da velocidade
+    aceleracao = ((velocidade ** 2) / (2 * altura_total))/100 + g
 
     if aceleracao <= 0:
         raise ValueError("A aceleração resultante deve ser maior que zero.")
 
     # Tempo de descida MRUV (considerando aceleração constante)
-    tempo_descida = ((2 * altura_total / aceleracao))** 0.5
+    tempo_descida = velocidade / aceleracao
 
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
@@ -51,27 +53,35 @@ def calcular_pouso(massa, aceleracao, altura_voo, altura_cidade):
     potencia_descida = energia_gravitacional  # Potência para descer o drone a altura total em uma unidade de tempo
     
     # Energia cinética devido à aceleração
-    velocidade_final = aceleracao * tempo_descida
-    energia_cinetica = 0.5 * massa * (velocidade_final ** 2)
+    energia_cinetica = 0.5 * massa * (velocidade ** 2)
     
     # Energia gasta considerando velocidade angular constante
     energia_gasta = energia_rotacional + (potencia_descida * tempo_descida) + energia_cinetica
 
     return (energia_gasta), tempo_descida
 
-def calcular_deslocamento(massa, aceleracao, distancia, altura_decolagem):
+def calcular_deslocamento(massa, velocidade, distancia, altura_decolagem):
     g = 9.81  # Aceleração da gravidade em m/s^2
+    velocidade/=100
+    # Calcular a aceleração a partir da velocidade
+    if distancia == 0:
+        return (0,0)
+    
+    # Tempo de deslocamento (considerando aceleração constante)
+    tempo_deslocamento = distancia / velocidade
+    
+    aceleracao = (velocidade/tempo_deslocamento)
+    
+    # simula o drone ajustando a aceleraçao para nao cair
+    if aceleracao <= 0:
+        aceleracao = 10
 
-    aceleracao = (aceleracao / 100) - g 
-
-    distancia = distancia * 1000
+    #distancia = distancia * 1000
 
     if aceleracao <= 0:
         raise ValueError("A aceleração resultante deve ser maior que zero.")
 
-    # Tempo de deslocamento (considerando aceleração constante)
-    tempo_deslocamento = ((2 * distancia / aceleracao))** 0.5
-
+    
     momento_inercia, velocidade_angular = rot_drone()
     energia_rotacional = ((momento_inercia * (velocidade_angular ** 2)) / 2)
 
@@ -83,8 +93,7 @@ def calcular_deslocamento(massa, aceleracao, distancia, altura_decolagem):
         potencia_deslocamento = 0
     
     # Energia cinética devido à aceleração
-    velocidade_final = aceleracao * tempo_deslocamento
-    energia_cinetica = 0.5 * massa * (velocidade_final ** 2)
+    energia_cinetica = 0.5 * massa * (velocidade ** 2)
     
     # Energia gasta considerando velocidade angular constante
     energia_gasta = energia_rotacional + (potencia_deslocamento * tempo_deslocamento) + energia_cinetica

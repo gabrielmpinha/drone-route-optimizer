@@ -281,7 +281,7 @@ locacoes_cidades_c = {
     "Cidade200": (25, 20, 0),
 }
 
-locacoes_cidades_D = {
+locacoes_cidades2 = {
     "Cidade1": (50, 130, 0, [1.0, 2.0]),
     "Cidade2": (280, 160, 0, [0.5]),
     "Cidade3": (140, 160, 0, [1.5, 2.5]),
@@ -334,7 +334,7 @@ locacoes_cidades_D = {
     "Cidade50": (100, 150, 0, [1.5]),
 }
 
-locacoes_cidades = {
+locacoes_cidades1 = {
     "Cidade1": (5, 5, 0, [1.0, 2.0]),
     "Cidade2": (5, 20, 0, [1.0, 2.0]),
     "Cidade3": (20, 5, 0, [1.0, 2.0]),
@@ -345,11 +345,11 @@ locacoes_cidades = {
     "Cidade8": (20, 8, 0, [1.0, 2.0])
 }
 
-locacoes_cidades_c = gerar_locacoes_cidades_circular((10, 10), 5, 8)
+locacoes_cidades = gerar_locacoes_cidades_circular((10, 10), 1, 10)
 
 
 
-initial_pos = (0, 0, 0)
+initial_pos = (10, 10, 0)
 
 # Lista de nomes de cidades para referência
 nomes_cidades = list(locacoes_cidades.keys())
@@ -362,23 +362,22 @@ peso_pacotes = sum([sum(pacotes) for _, _, _, pacotes in locacoes_cidades.values
 
 massa_inicial = peso_drone + peso_pacotes # 77kg
 
-
 class DroneOptimizationProblem(Problem):
     
     def __init__(self):
         super().__init__(
-            n_var=len(nomes_cidades) + 1,  # Número de variáveis: [cidade, aceleração]
+            n_var=len(nomes_cidades) + 1,  # Número de variáveis: [cidade, velocidade]
             n_obj=2,  # Número de objetivos: [tempo de entrega, consumo de energia]
-            xl=[0] * len(nomes_cidades) + [1000],  # Limites inferiores: cidades e aceleração
-            xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [10000],  # Limites superiores: cidades e aceleração
+            xl=[0] * len(nomes_cidades) + [555],  # Limites inferiores: cidades e velocidade mínima
+            xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [1944],  # Limites superiores: cidades e velocidade máxima
             vtype=int,
             n_ieq_constr=1
         )
 
     def _evaluate(self, X, out, *args, **kwargs):
-        # X é a matriz de soluções, onde cada linha é uma solução e cada coluna é uma variável de decisão, a última coluna sendo a aceleração
-        # Extrai a aceleraçao de todas as soluções e cria uma lista para colocar o tempo e energia de cada solução
-        aceleracao = X[:, -1]
+        # X é a matriz de soluções, onde cada linha é uma solução e cada coluna é uma variável de decisão, a última coluna sendo a velocidade
+        # Extrai a velocidade de todas as soluções e cria uma lista para colocar o tempo e energia de cada solução
+        velocidade = X[:, -1]
         tempo_total = []
         consumo_energia_total = []
         constraints_violadas = []
@@ -394,15 +393,15 @@ class DroneOptimizationProblem(Problem):
             distancia_inicial = calcular_distancia(initial_pos, locacoes_cidades[primeira_cidade])
 
             # Decolando do ponto inicial
-            energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2])
+            energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2])
             consumo_energia += energia_decolagem
             tempo += tempo_decolagem
             # Pousando na primeira cidade
-            energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[primeira_cidade][2])
+            energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[primeira_cidade][2])
             consumo_energia += energia_pouso
             tempo += tempo_pouso
             # Deslocando entre as cidades
-            energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, aceleracao=aceleracao[i], distancia=distancia_inicial, altura_decolagem=altura_decolagem)
+            energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, velocidade=velocidade[i], distancia=distancia_inicial, altura_decolagem=altura_decolagem)
             consumo_energia += energia_deslocamento
             tempo += tempo_deslocamento
 
@@ -415,15 +414,15 @@ class DroneOptimizationProblem(Problem):
                 distancia = calcular_distancia(locacoes_cidades[cidade_anterior], locacoes_cidades[cidade_atual]) 
 
                 # Decolando da cidadade anterior
-                energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_anterior][2])
+                energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_anterior][2])
                 consumo_energia += energia_decolagem
                 tempo += tempo_decolagem
                 # Pousando na cidade atual
-                energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_atual][2])
+                energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_atual][2])
                 consumo_energia += energia_pouso
                 tempo += tempo_pouso
                 # Deslocando entre as cidades
-                energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, aceleracao=aceleracao[i], distancia=distancia, altura_decolagem=altura_decolagem)
+                energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, velocidade=velocidade[i], distancia=distancia, altura_decolagem=altura_decolagem)
                 consumo_energia += energia_deslocamento
                 tempo += tempo_deslocamento
 
@@ -435,17 +434,17 @@ class DroneOptimizationProblem(Problem):
             distancia_retorno = calcular_distancia(locacoes_cidades[cidade_final], initial_pos)
 
             # Decolando da última cidade
-            energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_final][2])
+            energia_decolagem, tempo_decolagem = calcular_decolagem(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=locacoes_cidades[cidade_final][2])
             consumo_energia += energia_decolagem
             tempo += tempo_decolagem
 
             # Pousando no local inicial
-            energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, aceleracao=aceleracao[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2])
+            energia_pouso, tempo_pouso = calcular_pouso(massa = massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2])
             consumo_energia += energia_pouso
             tempo += tempo_pouso
 
             # Deslocando de volta ao local inicial
-            energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, aceleracao=aceleracao[i], distancia=distancia_retorno, altura_decolagem=altura_decolagem)
+            energia_deslocamento, tempo_deslocamento = calcular_deslocamento(massa = massa_atual, velocidade=velocidade[i], distancia=distancia_retorno, altura_decolagem=altura_decolagem)
             consumo_energia += energia_deslocamento
             tempo += tempo_deslocamento
 
