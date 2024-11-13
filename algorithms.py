@@ -11,26 +11,20 @@ class PMXCrossover(Crossover):
         self.prob = prob
 
     def _do(self, problem, X, **kwargs):
-        n_matings, n_parents, n_var = X.shape
+        n_parents, n_matings, n_var = X.shape
         Y = np.full_like(X, 0, dtype=X.dtype)
 
-        for p in range(n_parents):
+        for p in range(n_matings):
                 if np.random.random() < self.prob:
-                    if n_parents > 1:
-                        parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
-                        accel1, accel2 = X[0, p, -1], X[1, p, -1]
-                        child1, child2 = self.pmx(parent1, parent2)
-                        Y[0, p, :-1], Y[1, p, :-1] = child1, child2
-                        if np.random.random() < 0.5:
-                            Y[0, p, -1], Y[1, p, -1] = accel2, accel1
-                        else:
-                            Y[0, p, -1], Y[1, p, -1] = accel1, accel2
+                    parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
+                    accel1, accel2 = X[0, p, -1], X[1, p, -1]
+                    child1, child2 = self.pmx(parent1, parent2)
+                    Y[0, p, :-1], Y[1, p, :-1] = child1, child2
+                    if np.random.random() <= 0.5:
+                       Y[0, p, -1], Y[1, p, -1] = self.mutate_acceleration(accel2, problem.xl[-1], problem.xu[-1]), self.mutate_acceleration(accel1, problem.xl[-1], problem.xu[-1])
                     else:
-                        parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
-                        accel1, accel2 = X[0, p, -1], X[1, p, -1]
-                        child1, child2 = self.pmx(parent1, parent2)
-                        Y[0, p, :-1], Y[1, p, :-1] = child1, child2
                         Y[0, p, -1], Y[1, p, -1] = accel1, accel2
+      
                 else:
                     Y[0, p, :], Y[1, p, :] = X[0, p, :], X[1, p, :]
                     Y[0, p, -1], Y[1, p, -1] = X[0, p, -1], X[1, p, -1]
@@ -62,24 +56,28 @@ class PMXCrossover(Crossover):
             while gene in mapping:
                 gene = mapping[gene]
             child[i] = gene
+    
+    def mutate_acceleration(self, accel, min_accel, max_accel):
+        while True:
+            factor = np.random.uniform(0.9, 1.1)  # Pequena mutação
+            new_accel = int(accel * factor)
+            if min_accel <= new_accel <= max_accel:
+                break
+        return np.clip(new_accel, min_accel, max_accel)
 
 class CustomPermutationRandomSampling(PermutationRandomSampling):
 
     def _do(self, problem, n_samples, **kwargs):
-        n_var = problem.n_var - 1  # Exclude the last column (acceleration)
+        n_var = problem.n_var - 1 
         samples = np.full((n_samples, problem.n_var), int)
         
         for i in range(n_samples):
-            # Generate a permutation of city indices
             permutation = np.random.permutation(n_var)
-            # Assign the permutation to the sample
             samples[i, :-1] = permutation
-            # Assign a random acceleration value to the last position
             samples[i, -1] = np.random.randint(problem.xl[-1], problem.xu[-1])
         
         return samples
 
-# aplicar nas 51 posições(gene por gene) da solução 1/num cidades ou 2/num cidades
 class SwapMutation(Mutation):
     def __init__(self, prob):
         super().__init__()
@@ -88,20 +86,31 @@ class SwapMutation(Mutation):
     def _do(self, problem, X, **kwargs):
         for i in range(len(X)):
             X[i] = self.swap_mutation(X[i], self.prob)
+            X[i] = self.acceleration_mutation(X[i], self.prob, problem.xl[-1], problem.xu[-1])
         return X
     
     def swap_mutation(self, individual, prob):
-        if np.random.random() < prob:
-            size = len(individual) - 1
-            if size < 2:
-                return individual
+        size = len(individual) - 1
+        if size < 2:
+            return individual
 
-            # Select two positions to swap
-            idx1, idx2 = np.random.choice(size, 2, replace=False)
-            
-            # Swap the elements
-            individual[idx1], individual[idx2] = individual[idx2], individual[idx1]
-            
-            #individual[-1] = individual[-1]+100
+        for idx1 in range(size):
+            if np.random.random() < prob:
+                idx2 = np.random.randint(0, size)
+                while idx1 == idx2:
+                    idx2 = np.random.randint(0, size)
+                
+                individual[idx1], individual[idx2] = individual[idx2], individual[idx1]
+        
+        return individual
+
+    def acceleration_mutation(self, individual, prob, min, max):
+        if np.random.random() < prob:
+            while True:
+                factor = np.random.uniform(0.6, 1.4)
+                new_acceleration = int(individual[-1] * factor)
+                if min <= new_acceleration <= max:
+                    individual[-1] = new_acceleration
+                    break
         
         return individual

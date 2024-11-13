@@ -5,8 +5,7 @@ import numpy as np
 from algorithms import PMXCrossover, CustomPermutationRandomSampling, SwapMutation
 from plot_function import plot_results
 from drone_calculations import calcular_decolagem, calcular_pouso, calcular_deslocamento, rot_drone, calcular_distancia
-import math
-import random
+from benchmark import gerar_locacoes_cidades_circular
 
 # Coordenadas das cidades
 locacoes_cidades_a= {
@@ -282,7 +281,7 @@ locacoes_cidades_c = {
     "Cidade200": (25, 20, 0),
 }
 
-locacoes_cidades_d = {
+locacoes_cidades_D = {
     "Cidade1": (50, 130, 0, [1.0, 2.0]),
     "Cidade2": (280, 160, 0, [0.5]),
     "Cidade3": (140, 160, 0, [1.5, 2.5]),
@@ -337,10 +336,18 @@ locacoes_cidades_d = {
 
 locacoes_cidades = {
     "Cidade1": (5, 5, 0, [1.0, 2.0]),
-    "Cidade2": (5, 10, 0, [0.5]),
-    "Cidade3": (10, 5, 0, [1.5, 2.5]),
-    "Cidade4": (10, 10, 0, [1.0])
+    "Cidade2": (5, 20, 0, [1.0, 2.0]),
+    "Cidade3": (20, 5, 0, [1.0, 2.0]),
+    "Cidade4": (20, 20, 0, [1.0, 2.0]),
+    "Cidade5": (10, 20, 0, [1.0, 2.0]),
+    "Cidade6": (20, 10, 0, [1.0, 2.0]),
+    "Cidade7": (8, 20, 0, [1.0, 2.0]),
+    "Cidade8": (20, 8, 0, [1.0, 2.0])
 }
+
+locacoes_cidades_c = gerar_locacoes_cidades_circular((10, 10), 5, 8)
+
+
 
 initial_pos = (0, 0, 0)
 
@@ -362,8 +369,8 @@ class DroneOptimizationProblem(Problem):
         super().__init__(
             n_var=len(nomes_cidades) + 1,  # Número de variáveis: [cidade, aceleração]
             n_obj=2,  # Número de objetivos: [tempo de entrega, consumo de energia]
-            xl=[0] * len(nomes_cidades) + [1050],  # Limites inferiores: cidades e aceleração
-            xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [6000],  # Limites superiores: cidades e aceleração
+            xl=[0] * len(nomes_cidades) + [1000],  # Limites inferiores: cidades e aceleração
+            xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [10000],  # Limites superiores: cidades e aceleração
             vtype=int,
             n_ieq_constr=1
         )
@@ -455,16 +462,16 @@ class DroneOptimizationProblem(Problem):
 
 # Configurar o algoritmo NSGA-II
 algorithm = NSGA2(
-    pop_size=25, # tamanho de soluções em cada geraçao
+    pop_size=100, # tamanho de soluções em cada geraçao
     eliminate_duplicates=True,
     sampling=CustomPermutationRandomSampling(),
-    crossover=PMXCrossover(prob=0.8),
-    mutation=SwapMutation(prob=0.2)
+    crossover=PMXCrossover(prob=0.9),
+    mutation=SwapMutation(prob=(2/len(nomes_cidades)))
 )
 
 # Resolver o problema
 problem = DroneOptimizationProblem()
-res = minimize(problem, algorithm, ('n_gen', 25), verbose=True) # Quantidade de gerações que o alg roda
+res = minimize(problem, algorithm, ('n_gen', 100), verbose=True) # Quantidade de gerações que o alg roda
 # res.X array onde cada linha é uma solução, e cada coluna é uma variável de decisão, a ultima coluna sendo a aceleração
 # res.F array onde cada linha é uma solução, e cada coluna é um objetivo, a primeira coluna sendo o tempo e a segunda a energia
 

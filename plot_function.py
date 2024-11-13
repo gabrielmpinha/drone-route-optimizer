@@ -8,8 +8,13 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
 
+    # Segundo gráfico: Rota do Drone para até 3 soluções
+    sorted_indices = np.lexsort((energia, aceleracao))
+    selected_indices = sorted_indices[::len(sorted_indices) // 3][:3]
+
     # Primeiro gráfico: Tempo x Energia x Aceleração
-    scatter = ax1.scatter(tempo, energia, c=aceleracao, cmap='viridis', edgecolor='red')
+    edgecolors = ['blue' if i in selected_indices else 'red' for i in range(len(tempo))]
+    scatter = ax1.scatter(tempo, energia, c=aceleracao, cmap='viridis', edgecolor=edgecolors)
     cbar = plt.colorbar(scatter, ax=ax1)
     cbar.set_label('Aceleração')
     ax1.set_xlabel('Tempo')
@@ -46,12 +51,8 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
 
     fig.canvas.mpl_connect("button_press_event", on_click)
 
-    # Segundo gráfico: Rota do Drone para até 3 soluções
     cmap = scatter.get_cmap()
     norm = scatter.norm
-
-    sorted_indices = np.lexsort((energia, aceleracao))
-    selected_indices = sorted_indices[::len(sorted_indices) // 3][:3]
 
     lines = []
 
@@ -63,10 +64,13 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         y_coords = [initial_pos[1]] + [locacoes_cidades[cidade][1] for cidade in ordem_cidades] + [initial_pos[1]]
 
         color = cmap(norm(aceleracao[i]))
-        line, = ax2.plot(x_coords, y_coords, marker='o', linestyle='dashdot', color=color, label=f'Solução {i}')
+        line, = ax2.plot(x_coords, y_coords, marker='o', linestyle='-', color=color, label=f'Solução {i}')
         lines.append(line)
         for j, cidade in enumerate(['Inicial'] + ordem_cidades):
-            ax2.text(x_coords[j], y_coords[j], cidade, fontsize=12, ha='right')
+            if j == 1:
+                ax2.text(x_coords[j], y_coords[j], cidade, fontsize=12, ha='right', color='red')
+            else:
+                ax2.text(x_coords[j], y_coords[j], cidade, fontsize=12, ha='right')
 
     ax2.set_xlabel('X')
     ax2.set_ylabel('Y')
