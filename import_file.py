@@ -84,8 +84,8 @@ def exibir_interface():
             # Exibe as soluções na área de texto
             texto_resultado.delete(1.0, END)
             texto_resultado.insert(END, "Soluções encontradas:\n")
-            for solution in solutions:
-                texto_resultado.insert(END, f"{solution}\n")
+            
+            texto_resultado.insert(END, f"{solutions}\n")
 
             # Exibe o gráfico retornado pela função
             exibir_grafico(plot_result)

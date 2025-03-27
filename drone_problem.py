@@ -178,33 +178,24 @@ def drone_optimization(locacoes_cidades, initial_pos):
         tempo = res.F[i, 0]
         energia = res.F[i, 1]
         aceleracao = res.X[i, -1] / 100
-        solutions.append({
-            "ordem_cidades": ordem_cidades,
-            "aceleracao": aceleracao,
-            "tempo": tempo,
-            "energia": energia,
-            "constraints_violadas": res.G[i],
-        })
+        constraints_violadas = res.G[i]
+
+        # Formatar a solução como uma string legível
+        solution_str = (
+            f"Solução {i + 1}:\n"
+            f"  Ordem das cidades: {', '.join(ordem_cidades)}\n"
+            f"  Aceleração: {aceleracao:.2f}\n"
+            f"  Tempo: {tempo:.2f}\n"
+            f"  Energia: {energia:.2f}\n"
+            f"  Restrições violadas: {constraints_violadas}\n"
+        )
+        solutions.append(solution_str)
+
+    # Combinar todas as soluções em uma única string
+    solutions = "\n".join(solutions)
+    print(solutions)
 
     # Gerar o gráfico
     plot_result = plot_results(res, locacoes_cidades, initial_pos, nomes_cidades)
 
     return plot_result, solutions
-
-initial_pos = (10, 10, 0)
-
-locacoes_cidades1 = [
-    Pacote("Cidade1", 5, 5, 0, [1.0, 2.0]),
-    Pacote("Cidade2", 5, 20, 0, [1.0, 2.0]),
-    Pacote("Cidade3", 20, 5, 0, [1.0, 2.0]),
-    Pacote("Cidade4", 20, 20, 0, [1.0, 2.0]),
-    Pacote("Cidade5", 10, 20, 0, [1.0, 2.0]),
-    Pacote("Cidade6", 20, 10, 0, [1.0, 2.0]),
-    Pacote("Cidade7", 8, 20, 0, [1.0, 2.0]),
-    Pacote("Cidade8", 20, 8, 0, [1.0, 2.0]),
-]
-
-#plot_result, solutions = drone_optimization(locacoes_cidades1, initial_pos)
-
-#print(plot_result)
-#print(solutions)
