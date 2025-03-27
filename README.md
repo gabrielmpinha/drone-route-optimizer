@@ -3,6 +3,8 @@
 # dependencias:
 numpy
 matplotlib
+pandas
+openpyxl
 pymoo
  
 # Author: Gabriel Azevedo Moreira Costa Pinheiro
