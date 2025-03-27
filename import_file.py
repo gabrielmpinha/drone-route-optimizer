@@ -2,16 +2,18 @@ import pandas as pd
 from tkinter import Tk, filedialog, Label, Button, Text, Scrollbar, END, Frame, Entry
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from drone_problem import drone_optimization, Pacote
 
 class Pacote:
-    def __init__(self, nome, x, y, peso):
+    def __init__(self, nome, x, y, z, peso):
         self.nome = nome
         self.x = x
         self.y = y
+        self.z = z
         self.peso = peso
 
     def __repr__(self):
-        return f"Pacote(Nome={self.nome}, X={self.x}, Y={self.y}, Peso={self.peso})"
+        return f"Pacote(Nome={self.nome}, X={self.x}, Y={self.y}, Z={self.z}, Peso={self.peso})"
 
 def importar_planilha(caminho_arquivo):
     df = pd.read_excel(caminho_arquivo, dtype={"Nome": str, "X": float, "Y": float, "Peso": float})
@@ -26,12 +28,13 @@ def importar_planilha(caminho_arquivo):
             nome=row["Nome"],
             x=row["X"],
             y=row["Y"],
-            peso=row["Peso"]
+            z=0,  # Z sempre será 0
+            peso=[row["Peso"]]
         )
         lista_pacotes.append(pacote)
-
     return lista_pacotes
 
+# Função para abrir um diálogo de seleção de arquivo
 def selecionar_arquivo():
     caminho_arquivo = filedialog.askopenfilename(
         title="Selecione a planilha",
@@ -39,19 +42,22 @@ def selecionar_arquivo():
     )
     return caminho_arquivo
 
+# Função principal para exibir a interface gráfica
 def exibir_interface():
-    caminho_arquivo = None
+    caminho_arquivo = None  # Variável para armazenar o caminho do arquivo selecionado
 
+    # Função para carregar o arquivo selecionado
     def carregar_arquivo():
         nonlocal caminho_arquivo
         caminho_arquivo = selecionar_arquivo()
         if caminho_arquivo:
-            texto_resultado.delete(1.0, END)
+            texto_resultado.delete(1.0, END)  # Limpa o texto anterior
             texto_resultado.insert(END, f"Arquivo selecionado: {caminho_arquivo}\n")
         else:
             texto_resultado.delete(1.0, END)
             texto_resultado.insert(END, "Nenhum arquivo foi selecionado.\n")
 
+    # Função para processar os dados após o clique no botão "Enviar"
     def enviar_dados():
         if not caminho_arquivo:
             texto_resultado.delete(1.0, END)
@@ -59,77 +65,89 @@ def exibir_interface():
             return
 
         try:
+            # Obtém os valores de X e Y iniciais das caixas de texto
             x_inicial = float(entry_x.get())
             y_inicial = float(entry_y.get())
+            initial_pos = (x_inicial, y_inicial, 0)  # Posição inicial do drone
         except ValueError:
             texto_resultado.delete(1.0, END)
             texto_resultado.insert(END, "Erro: Valores de X e Y devem ser números.\n")
             return
 
         try:
+            # Importa os pacotes da planilha
             pacotes = importar_planilha(caminho_arquivo)
+
+            # Chama a função drone_optimization
+            plot_result, solutions = drone_optimization(pacotes, initial_pos)
+
+            # Exibe as soluções na área de texto
             texto_resultado.delete(1.0, END)
-            texto_resultado.insert(END, f"Posição inicial: X={x_inicial}, Y={y_inicial}\n")
-            texto_resultado.insert(END, "Pacotes importados:\n")
-            for pacote in pacotes:
-                texto_resultado.insert(END, f"{pacote}\n")
-            exibir_grafico(pacotes)
+            texto_resultado.insert(END, "Soluções encontradas:\n")
+            for solution in solutions:
+                texto_resultado.insert(END, f"{solution}\n")
+
+            # Exibe o gráfico retornado pela função
+            exibir_grafico(plot_result)
         except Exception as e:
             texto_resultado.delete(1.0, END)
-            texto_resultado.insert(END, f"Erro ao importar a planilha: {e}\n")
+            texto_resultado.insert(END, f"Erro ao processar os dados: {e}\n")
 
-    def exibir_grafico(pacotes):
-        nomes = [pacote.nome for pacote in pacotes]
-        pesos = [pacote.peso for pacote in pacotes]
-
-        fig = Figure(figsize=(5, 4), dpi=100)
-        ax = fig.add_subplot(111)
-        ax.bar(nomes, pesos, color='blue')
-        ax.set_title("Peso por Pacote")
-        ax.set_xlabel("Nome")
-        ax.set_ylabel("Peso")
-
+    # Função para exibir o gráfico retornado pela função drone_optimization
+    def exibir_grafico(plot_result):
+        # Remove gráficos anteriores e exibe o novo gráfico
         for widget in frame_grafico.winfo_children():
             widget.destroy()
-        canvas = FigureCanvasTkAgg(fig, master=frame_grafico)
+        canvas = FigureCanvasTkAgg(plot_result, master=frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack()
 
+    # Cria a janela principal
     root = Tk()
     root.title("Otimizador de Rotas de Drones")
 
+    # Rótulo para instrução
     label = Label(root, text="Clique no botão abaixo para selecionar a planilha:")
     label.pack(pady=10)
 
+    # Botão para selecionar a planilha
     botao_selecionar = Button(root, text="Selecionar Planilha", command=carregar_arquivo)
     botao_selecionar.pack(pady=5)
 
+    # Caixa de texto para a posição X inicial
     label_x = Label(root, text="Posição X inicial:")
     label_x.pack(pady=5)
     entry_x = Entry(root)
     entry_x.insert(0, "0")  # Valor padrão
     entry_x.pack(pady=5)
 
+    # Caixa de texto para a posição Y inicial
     label_y = Label(root, text="Posição Y inicial:")
     label_y.pack(pady=5)
     entry_y = Entry(root)
     entry_y.insert(0, "0")  # Valor padrão
     entry_y.pack(pady=5)
 
+    # Botão para enviar os dados
     botao_enviar = Button(root, text="Enviar", command=enviar_dados)
     botao_enviar.pack(pady=10)
 
+    # Área de texto para exibir os resultados
     texto_resultado = Text(root, height=10, width=60)
     texto_resultado.pack(pady=10)
 
+    # Barra de rolagem para a área de texto
     scrollbar = Scrollbar(root, command=texto_resultado.yview)
     texto_resultado.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side="right", fill="y")
 
+    # Frame para exibir o gráfico
     frame_grafico = Frame(root)
     frame_grafico.pack(pady=10)
 
+    # Inicia o loop da interface gráfica
     root.mainloop()
 
+# Executa a interface gráfica
 if __name__ == "__main__":
     exibir_interface()

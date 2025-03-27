@@ -21,7 +21,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     ax1.set_ylabel('Energia')
     ax1.set_title('Tempo x Energia x Velocidade')
 
-    annot = ax1.annotate("", xy=(0,0), xytext=(20,20),
+    annot = ax1.annotate("", xy=(0, 0), xytext=(20, 20),
                          textcoords="offset points",
                          bbox=dict(boxstyle="round", fc="w"),
                          arrowprops=dict(arrowstyle="->"))
@@ -60,8 +60,9 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         ordem_indices = res.X[i, :-1]  # Exclui a última coluna (velocidade)
         ordem_cidades = [nomes_cidades[j] for j in ordem_indices]
 
-        x_coords = [initial_pos[0]] + [locacoes_cidades[cidade][0] for cidade in ordem_cidades] + [initial_pos[0]]
-        y_coords = [initial_pos[1]] + [locacoes_cidades[cidade][1] for cidade in ordem_cidades] + [initial_pos[1]]
+        # Obter as coordenadas X e Y das cidades a partir da lista de objetos Pacote
+        x_coords = [initial_pos[0]] + [next(cidade.x for cidade in locacoes_cidades if cidade.nome == nome) for nome in ordem_cidades] + [initial_pos[0]]
+        y_coords = [initial_pos[1]] + [next(cidade.y for cidade in locacoes_cidades if cidade.nome == nome) for nome in ordem_cidades] + [initial_pos[1]]
 
         color = cmap(norm(velocidade[i]))
         line, = ax2.plot(x_coords, y_coords, marker='o', linestyle='-', color=color, label=f'Solução {i}')
@@ -79,14 +80,11 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     legend = ax2.legend()
 
     def on_pick(event):
-
         legend_item = event.artist
-
         orig_line = lines[legend.get_texts().index(legend_item)]
-
         visible = not orig_line.get_visible()
         orig_line.set_visible(visible)
-                
+
         if not visible:
             legend_item.set_text(''.join([char + '\u0336' for char in legend_item.get_text()]))
         else:
@@ -99,4 +97,6 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         legend_item.set_picker(True)
 
     plt.tight_layout()
-    plt.show()
+
+    # Retorna o objeto Figure em vez de exibir o gráfico
+    return fig

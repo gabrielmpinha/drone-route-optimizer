@@ -6,6 +6,7 @@ from algorithms import PMXCrossover, CustomPermutationRandomSampling, SwapMutati
 from plot_function import plot_results
 from drone_calculations import calcular_decolagem, calcular_pouso, calcular_deslocamento, rot_drone, calcular_distancia
 from benchmark import gerar_locacoes_cidades_circular
+from import_file import Pacote
 
 # Coordenadas das cidades
 locacoes_cidades_a= {
