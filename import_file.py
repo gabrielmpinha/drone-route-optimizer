@@ -1,5 +1,5 @@
 import pandas as pd
-from tkinter import Tk, filedialog, Label, Button, Text, Scrollbar, END, Frame
+from tkinter import Tk, filedialog, Label, Button, Text, Scrollbar, END, Frame, Entry
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -40,29 +40,48 @@ def selecionar_arquivo():
     return caminho_arquivo
 
 def exibir_interface():
+    caminho_arquivo = None
+
     def carregar_arquivo():
+        nonlocal caminho_arquivo
         caminho_arquivo = selecionar_arquivo()
         if caminho_arquivo:
-            try:
-                pacotes = importar_planilha(caminho_arquivo)
-                texto_resultado.delete(1.0, END)  # Limpa o texto anterior
-                texto_resultado.insert(END, "Pacotes importados:\n")
-                for pacote in pacotes:
-                    texto_resultado.insert(END, f"{pacote}\n")
-                exibir_grafico(pacotes)  # Chama a função para exibir o gráfico
-            except Exception as e:
-                texto_resultado.delete(1.0, END)
-                texto_resultado.insert(END, f"Erro ao importar a planilha: {e}")
+            texto_resultado.delete(1.0, END)
+            texto_resultado.insert(END, f"Arquivo selecionado: {caminho_arquivo}\n")
         else:
             texto_resultado.delete(1.0, END)
-            texto_resultado.insert(END, "Nenhum arquivo foi selecionado.")
+            texto_resultado.insert(END, "Nenhum arquivo foi selecionado.\n")
+
+    def enviar_dados():
+        if not caminho_arquivo:
+            texto_resultado.delete(1.0, END)
+            texto_resultado.insert(END, "Erro: Nenhum arquivo foi selecionado.\n")
+            return
+
+        try:
+            x_inicial = float(entry_x.get())
+            y_inicial = float(entry_y.get())
+        except ValueError:
+            texto_resultado.delete(1.0, END)
+            texto_resultado.insert(END, "Erro: Valores de X e Y devem ser números.\n")
+            return
+
+        try:
+            pacotes = importar_planilha(caminho_arquivo)
+            texto_resultado.delete(1.0, END)
+            texto_resultado.insert(END, f"Posição inicial: X={x_inicial}, Y={y_inicial}\n")
+            texto_resultado.insert(END, "Pacotes importados:\n")
+            for pacote in pacotes:
+                texto_resultado.insert(END, f"{pacote}\n")
+            exibir_grafico(pacotes)
+        except Exception as e:
+            texto_resultado.delete(1.0, END)
+            texto_resultado.insert(END, f"Erro ao importar a planilha: {e}\n")
 
     def exibir_grafico(pacotes):
-        # Cria os dados para o gráfico
         nomes = [pacote.nome for pacote in pacotes]
         pesos = [pacote.peso for pacote in pacotes]
 
-        # Cria a figura do matplotlib
         fig = Figure(figsize=(5, 4), dpi=100)
         ax = fig.add_subplot(111)
         ax.bar(nomes, pesos, color='blue')
@@ -70,39 +89,46 @@ def exibir_interface():
         ax.set_xlabel("Nome")
         ax.set_ylabel("Peso")
 
-        # Renderiza o gráfico no tkinter
         for widget in frame_grafico.winfo_children():
-            widget.destroy()  # Remove gráficos anteriores
+            widget.destroy()
         canvas = FigureCanvasTkAgg(fig, master=frame_grafico)
         canvas.draw()
         canvas.get_tk_widget().pack()
 
-    # Cria a janela principal
     root = Tk()
     root.title("Otimizador de Rotas de Drones")
 
-    # Adiciona um rótulo
     label = Label(root, text="Clique no botão abaixo para selecionar a planilha:")
     label.pack(pady=10)
 
-    # Adiciona um botão para selecionar o arquivo
     botao_selecionar = Button(root, text="Selecionar Planilha", command=carregar_arquivo)
     botao_selecionar.pack(pady=5)
 
-    # Adiciona uma área de texto para exibir os resultados
+    label_x = Label(root, text="Posição X inicial:")
+    label_x.pack(pady=5)
+    entry_x = Entry(root)
+    entry_x.insert(0, "0")  # Valor padrão
+    entry_x.pack(pady=5)
+
+    label_y = Label(root, text="Posição Y inicial:")
+    label_y.pack(pady=5)
+    entry_y = Entry(root)
+    entry_y.insert(0, "0")  # Valor padrão
+    entry_y.pack(pady=5)
+
+    botao_enviar = Button(root, text="Enviar", command=enviar_dados)
+    botao_enviar.pack(pady=10)
+
     texto_resultado = Text(root, height=10, width=60)
     texto_resultado.pack(pady=10)
 
-    # Adiciona uma barra de rolagem à área de texto
     scrollbar = Scrollbar(root, command=texto_resultado.yview)
     texto_resultado.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side="right", fill="y")
 
-    # Adiciona um frame para o gráfico
     frame_grafico = Frame(root)
     frame_grafico.pack(pady=10)
 
-    # Inicia o loop da interface gráfica
     root.mainloop()
 
 if __name__ == "__main__":
