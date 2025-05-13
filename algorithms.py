@@ -16,25 +16,33 @@ class PMXCrossover(Crossover):
 
         for p in range(n_matings):
                 if np.random.random() < self.prob:
-                    parent1, parent2 = X[0, p, :-1], X[1, p, :-1]
-                    accel1, accel2 = X[0, p, -1], X[1, p, -1]
+                    parent1, parent2 = X[0, p, :-3], X[1, p, :-3]
+                    vel_hor1, vel_hor2 = X[0, p, -1], X[1, p, -1]
+                    vel_desc1, vel_desc2 = X[0, p, -2], X[1, p, -2]
+                    vel_asc1, vel_asc2 = X[0, p, -3], X[1, p, -3]
                     child1, child2 = self.pmx(parent1, parent2)
-                    Y[0, p, :-1], Y[1, p, :-1] = child1, child2
+                    Y[0, p, :-3], Y[1, p, :-3] = child1, child2
                     if np.random.random() <= 0.5:
-                       Y[0, p, -1], Y[1, p, -1] = self.mutate_acceleration(accel2, problem.xl[-1], problem.xu[-1]), self.mutate_acceleration(accel1, problem.xl[-1], problem.xu[-1])
+                       Y[0, p, -1], Y[1, p, -1] = self.mutate_acceleration(vel_hor2, problem.xl[-1], problem.xu[-1]), self.mutate_acceleration(vel_hor1, problem.xl[-1], problem.xu[-1])
+                       Y[0, p, -2], Y[1, p, -2] = self.mutate_acceleration(vel_desc2, problem.xl[-2], problem.xu[-2]), self.mutate_acceleration(vel_desc1, problem.xl[-2], problem.xu[-2])
+                       Y[0, p, -3], Y[1, p, -3] = self.mutate_acceleration(vel_asc2, problem.xl[-3], problem.xu[-3]), self.mutate_acceleration(vel_asc1, problem.xl[-3], problem.xu[-3])
                     else:
-                        Y[0, p, -1], Y[1, p, -1] = accel1, accel2
+                        Y[0, p, -1], Y[1, p, -1] = vel_hor1, vel_hor2
+                        Y[0, p, -2], Y[1, p, -2] = vel_desc1, vel_desc2
+                        Y[0, p, -3], Y[1, p, -3] = vel_asc1, vel_asc2
       
                 else:
                     Y[0, p, :], Y[1, p, :] = X[0, p, :], X[1, p, :]
                     Y[0, p, -1], Y[1, p, -1] = X[0, p, -1], X[1, p, -1]
+                    Y[0, p, -2], Y[1, p, -2] = X[0, p, -2], X[1, p, -2]
+                    Y[0, p, -3], Y[1, p, -3] = X[0, p, -3], X[1, p, -3]
 
         return Y
        
     def pmx(self, parent1, parent2):
         size = len(parent1)
         cx_point1, cx_point2 = sorted(np.random.choice(range(size), 2, replace=False)) # pontos de cross
-        child1, child2 = np.full(size, -1), np.full(size, -1) # inicializa os filhos
+        child1, child2 = np.full(size, -3), np.full(size, -3) # inicializa os filhos
 
         child1[cx_point1:cx_point2+1] = parent1[cx_point1:cx_point2+1]
         child2[cx_point1:cx_point2+1] = parent2[cx_point1:cx_point2+1]
@@ -68,14 +76,23 @@ class PMXCrossover(Crossover):
 class CustomPermutationRandomSampling(PermutationRandomSampling):
 
     def _do(self, problem, n_samples, **kwargs):
-        n_var = problem.n_var - 1 
+        n_speeds = 3
+        n_cities = problem.n_var - n_speeds
+
         samples = np.full((n_samples, problem.n_var), int)
         
         for i in range(n_samples):
-            permutation = np.random.permutation(n_var)
-            samples[i, :-1] = permutation
-            samples[i, -1] = np.random.randint(problem.xl[-1], problem.xu[-1])
-        
+            perm = np.random.permutation(n_cities) 
+
+            speeds = [
+                np.random.randint(problem.xl[n_cities + j],
+                                  problem.xu[n_cities + j])
+                for j in range(n_speeds)
+            ]
+
+            samples[i, :n_cities] = perm
+            samples[i, n_cities:] = speeds
+
         return samples
 
 class SwapMutation(Mutation):
@@ -86,11 +103,13 @@ class SwapMutation(Mutation):
     def _do(self, problem, X, **kwargs):
         for i in range(len(X)):
             X[i] = self.swap_mutation(X[i], self.prob)
-            X[i] = self.acceleration_mutation(X[i], self.prob, problem.xl[-1], problem.xu[-1])
+            X[i] = self.acceleration_mutation(X[i], self.prob, problem.xl[-1], problem.xu[-1], -1)
+            X[i] = self.acceleration_mutation(X[i], self.prob, problem.xl[-2], problem.xu[-2], -2)
+            X[i] = self.acceleration_mutation(X[i], self.prob, problem.xl[-3], problem.xu[-3], -3)
         return X
-    
+
     def swap_mutation(self, individual, prob):
-        size = len(individual) - 1
+        size = len(individual) - 3
         if size < 2:
             return individual
 
@@ -104,13 +123,13 @@ class SwapMutation(Mutation):
         
         return individual
 
-    def acceleration_mutation(self, individual, prob, min, max):
+    def acceleration_mutation(self, individual, prob, min, max, pos):
         if np.random.random() < prob:
             while True:
                 factor = np.random.uniform(0.6, 1.4)
-                new_acceleration = int(individual[-1] * factor)
+                new_acceleration = int(individual[pos] * factor)
                 if min <= new_acceleration <= max:
-                    individual[-1] = new_acceleration
+                    individual[pos] = new_acceleration
                     break
         
         return individual

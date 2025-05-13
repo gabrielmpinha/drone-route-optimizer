@@ -6,5 +6,6 @@ matplotlib
 pandas
 openpyxl
 pymoo
+tkinter
  
 # Author: Gabriel Azevedo Moreira Costa Pinheiro

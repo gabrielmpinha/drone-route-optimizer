@@ -5,6 +5,8 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     tempo = res.F[:, 0]
     energia = res.F[:, 1]
     velocidade = res.X[:, -1] / 100
+    velocidade_subida = res.X[:, -3] / 100
+    velocidade_descida = res.X[:, -2] / 100
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
 
@@ -31,7 +33,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         pos = scatter.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         sol_index = ind["ind"][0]
-        text = f"Solução: {sol_index}\nVelocidade: {velocidade[sol_index]:.2f}\nTempo: {tempo[sol_index]:.2f}\nEnergia: {energia[sol_index]:.2f}"
+        text = f"Solução: {sol_index}\nVelocidade: {velocidade[sol_index]:.2f}m/s\nVelocidade subida: {velocidade_subida[sol_index]:.2f}m/s\nVelocidade descida: {velocidade_descida[sol_index]:.2f}m/s\nTempo: {tempo[sol_index]:.2f}s \nEnergia: {energia[sol_index]:.2f}Wh"
         annot.set_text(text)
         annot.get_bbox_patch().set_facecolor('yellow')
         annot.get_bbox_patch().set_alpha(0.6)
@@ -58,7 +60,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         ax2.clear()
 
         # Obter os dados da solução clicada
-        ordem_indices = res.X[sol_index, :-1]  # Exclui a última coluna (velocidade)
+        ordem_indices = res.X[sol_index, :-3]  # Exclui as últimas colunas (velocidade)
         ordem_cidades = [nomes_cidades[j] for j in ordem_indices]
 
         # Obter as coordenadas X e Y das cidades a partir da lista de objetos Pacote

@@ -4,17 +4,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from drone_problem import drone_optimization, Pacote
 
-class Pacote:
-    def __init__(self, nome, x, y, z, peso):
-        self.nome = nome
-        self.x = x
-        self.y = y
-        self.z = z
-        self.peso = peso
-
-    def __repr__(self):
-        return f"Pacote(Nome={self.nome}, X={self.x}, Y={self.y}, Z={self.z}, Peso={self.peso})"
-
 def importar_planilha(caminho_arquivo):
     df = pd.read_excel(caminho_arquivo, dtype={"Nome": str, "X": float, "Y": float, "Peso": float})
 

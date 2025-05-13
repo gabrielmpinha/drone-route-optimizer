@@ -30,30 +30,36 @@ def drone_optimization(locacoes_cidades, initial_pos):
         tuple: Resultado do plot_results e a lista de soluções.
     """
     nomes_cidades = [pacote.nome for pacote in locacoes_cidades]
-    altura_decolagem = 10  # Altura que o drone vai subir na transição
-    peso_drone = 8
+    altura_decolagem = 80  # Altura que o drone vai subir na transição
+    peso_drone = 9.2
     peso_pacotes = sum([sum(pacote.peso) for pacote in locacoes_cidades])
     massa_inicial = peso_drone + peso_pacotes  # Massa inicial do drone
+    
+    vel_asc = 600 # vel maxima subida
+    vel_desc = 500 # vel maxima descida
+    vel_desloc = 2300 # vel max horizontal
 
     class DroneOptimizationProblem(Problem):
         def __init__(self):
             super().__init__(
-                n_var=len(nomes_cidades) + 1,  # Número de variáveis: [cidade, velocidade]
+                n_var=len(nomes_cidades) + 3,  # Número de variáveis: [cidade, velocidades]
                 n_obj=2,  # Número de objetivos: [tempo de entrega, consumo de energia]
-                xl=[0] * len(nomes_cidades) + [555],  # Limites inferiores: cidades e velocidade mínima
-                xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [1944],  # Limites superiores: cidades e velocidade máxima
+                xl=[0] * len(nomes_cidades) + [50] + [50] + [100],  # Limites inferiores: cidades, vel minima subida, descida, desloca
+                xu=[len(nomes_cidades) - 1] * len(nomes_cidades) + [vel_asc] + [vel_desc] + [vel_desloc],  # Limites superiores: cidades, vel max subida, descida, desloca
                 vtype=int,
                 n_ieq_constr=1
             )
 
         def _evaluate(self, X, out, *args, **kwargs):
-            velocidade = X[:, -1]
+            v_subida   = X[:, -3] / 100
+            v_descida  = X[:, -2] / 100
+            v_horiz    = X[:, -1] / 100
             tempo_total = []
             consumo_energia_total = []
             constraints_violadas = []
 
             for i in range(X.shape[0]):
-                ordem_indices = X[i, :-1]
+                ordem_indices = X[i, :-3]
                 ordem_cidades = [locacoes_cidades[j] for j in ordem_indices]
 
                 tempo = 0
@@ -64,21 +70,21 @@ def drone_optimization(locacoes_cidades, initial_pos):
 
                 # Decolando do ponto inicial
                 energia_decolagem, tempo_decolagem = calcular_decolagem(
-                    massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2]
+                    massa=massa_atual, velocidade=v_subida[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2]
                 )
                 consumo_energia += energia_decolagem
                 tempo += tempo_decolagem
 
                 # Pousando na primeira cidade
                 energia_pouso, tempo_pouso = calcular_pouso(
-                    massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=primeira_cidade.z
+                    massa=massa_atual, velocidade=v_descida[i], altura_voo=altura_decolagem, altura_cidade=primeira_cidade.z
                 )
                 consumo_energia += energia_pouso
                 tempo += tempo_pouso
 
                 # Deslocando entre as cidades
                 energia_deslocamento, tempo_deslocamento = calcular_deslocamento(
-                    massa=massa_atual, velocidade=velocidade[i], distancia=distancia_inicial, altura_decolagem=altura_decolagem
+                    massa=massa_atual, velocidade=v_horiz[i], distancia=distancia_inicial, altura_decolagem=altura_decolagem
                 )
                 consumo_energia += energia_deslocamento
                 tempo += tempo_deslocamento
@@ -96,21 +102,21 @@ def drone_optimization(locacoes_cidades, initial_pos):
 
                     # Decolando da cidade anterior
                     energia_decolagem, tempo_decolagem = calcular_decolagem(
-                        massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=cidade_anterior.z
+                        massa=massa_atual, velocidade=v_subida[i], altura_voo=altura_decolagem, altura_cidade=cidade_anterior.z
                     )
                     consumo_energia += energia_decolagem
                     tempo += tempo_decolagem
 
                     # Pousando na cidade atual
                     energia_pouso, tempo_pouso = calcular_pouso(
-                        massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=cidade_atual.z
+                        massa=massa_atual, velocidade=v_descida[i], altura_voo=altura_decolagem, altura_cidade=cidade_atual.z
                     )
                     consumo_energia += energia_pouso
                     tempo += tempo_pouso
 
                     # Deslocando entre as cidades
                     energia_deslocamento, tempo_deslocamento = calcular_deslocamento(
-                        massa=massa_atual, velocidade=velocidade[i], distancia=distancia, altura_decolagem=altura_decolagem
+                        massa=massa_atual, velocidade=v_horiz[i], distancia=distancia, altura_decolagem=altura_decolagem
                     )
                     consumo_energia += energia_deslocamento
                     tempo += tempo_deslocamento
@@ -126,21 +132,21 @@ def drone_optimization(locacoes_cidades, initial_pos):
 
                 # Decolando da última cidade
                 energia_decolagem, tempo_decolagem = calcular_decolagem(
-                    massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=cidade_final.z
+                    massa=massa_atual, velocidade=v_subida[i], altura_voo=altura_decolagem, altura_cidade=cidade_final.z
                 )
                 consumo_energia += energia_decolagem
                 tempo += tempo_decolagem
 
                 # Pousando no local inicial
                 energia_pouso, tempo_pouso = calcular_pouso(
-                    massa=massa_atual, velocidade=velocidade[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2]
+                    massa=massa_atual, velocidade=v_descida[i], altura_voo=altura_decolagem, altura_cidade=initial_pos[2]
                 )
                 consumo_energia += energia_pouso
                 tempo += tempo_pouso
 
                 # Deslocando de volta ao local inicial
                 energia_deslocamento, tempo_deslocamento = calcular_deslocamento(
-                    massa=massa_atual, velocidade=velocidade[i], distancia=distancia_retorno, altura_decolagem=altura_decolagem
+                    massa=massa_atual, velocidade=v_horiz[i], distancia=distancia_retorno, altura_decolagem=altura_decolagem
                 )
                 consumo_energia += energia_deslocamento
                 tempo += tempo_deslocamento
@@ -163,7 +169,7 @@ def drone_optimization(locacoes_cidades, initial_pos):
         eliminate_duplicates=True,
         sampling=CustomPermutationRandomSampling(),
         crossover=PMXCrossover(prob=0.9),
-        mutation=SwapMutation(prob=(2 / len(nomes_cidades))),
+        mutation=SwapMutation(prob=(1 / (len(nomes_cidades)+3))),
     )
 
     # Resolver o problema
@@ -173,20 +179,24 @@ def drone_optimization(locacoes_cidades, initial_pos):
     # Processar os resultados
     solutions = []
     for i in range(len(res.X)):
-        ordem_indices = res.X[i, :-1]
+        ordem_indices = res.X[i, :-3]
         ordem_cidades = [nomes_cidades[j] for j in ordem_indices]
         tempo = res.F[i, 0]
         energia = res.F[i, 1]
-        aceleracao = res.X[i, -1] / 100
+        velocidade = res.X[i, -1]/100 # Converter para m/s
+        velocidade_subida = res.X[i, -3]/100
+        velocidade_descida = res.X[i, -2]/100
         constraints_violadas = res.G[i]
 
         # Formatar a solução como uma string legível
         solution_str = (
             f"Solução {i + 1}:\n"
             f"  Ordem das cidades: {', '.join(ordem_cidades)}\n"
-            f"  Aceleração: {aceleracao:.2f}\n"
-            f"  Tempo: {tempo:.2f}\n"
-            f"  Energia: {energia:.2f}\n"
+            f"  Velocidade: {velocidade:.2f} m/s\n"
+            f"  Velocidade de subida: {velocidade_subida:.2f} m/s\n"
+            f"  Velocidade de descida: {velocidade_descida:.2f} m/s\n"
+            f"  Tempo: {tempo:.2f} segundos\n"
+            f"  Energia: {energia:.2f} Wh\n"
             f"  Restrições violadas: {constraints_violadas}\n"
         )
         solutions.append(solution_str)
