@@ -31,13 +31,13 @@ def drone_optimization(locacoes_cidades, initial_pos):
     """
     nomes_cidades = [pacote.nome for pacote in locacoes_cidades]
     altura_decolagem = 80  # Altura que o drone vai subir na transição
-    peso_drone = 9.2
+    peso_drone = 65
     peso_pacotes = sum([sum(pacote.peso) for pacote in locacoes_cidades])
     massa_inicial = peso_drone + peso_pacotes  # Massa inicial do drone
     
-    vel_asc = 600 # vel maxima subida
-    vel_desc = 500 # vel maxima descida
-    vel_desloc = 2300 # vel max horizontal
+    vel_asc = 500 # vel maxima subida
+    vel_desc = 300 # vel maxima descida
+    vel_desloc = 2000 # vel max horizontal
 
     class DroneOptimizationProblem(Problem):
         def __init__(self):

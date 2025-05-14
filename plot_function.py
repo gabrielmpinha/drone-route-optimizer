@@ -8,7 +8,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
     velocidade_subida = res.X[:, -3] / 100
     velocidade_descida = res.X[:, -2] / 100
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
 
     # Ordenar soluções para destacar até 3 delas
     sorted_indices = np.lexsort((energia, velocidade))

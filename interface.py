@@ -89,7 +89,7 @@ def exibir_interface():
             widget.destroy()
         canvas = FigureCanvasTkAgg(plot_result, master=frame_grafico)
         canvas.draw()
-        canvas.get_tk_widget().pack()
+        canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
 
     # Cria a janela principal
     root = Tk()
