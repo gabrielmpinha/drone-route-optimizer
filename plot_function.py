@@ -33,7 +33,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
         pos = scatter.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         sol_index = ind["ind"][0]
-        text = f"Solução: {sol_index}\nVelocidade: {velocidade[sol_index]:.2f}m/s\nVelocidade subida: {velocidade_subida[sol_index]:.2f}m/s\nVelocidade descida: {velocidade_descida[sol_index]:.2f}m/s\nTempo: {tempo[sol_index]:.2f}s \nEnergia: {energia[sol_index]:.2f}Wh"
+        text = f"Solução: {sol_index+1}\nVelocidade: {velocidade[sol_index]:.2f}m/s\nVelocidade subida: {velocidade_subida[sol_index]:.2f}m/s\nVelocidade descida: {velocidade_descida[sol_index]:.2f}m/s\nTempo: {tempo[sol_index]:.2f}s \nEnergia: {energia[sol_index]:.2f}Wh"
         annot.set_text(text)
         annot.get_bbox_patch().set_facecolor('yellow')
         annot.get_bbox_patch().set_alpha(0.6)
@@ -69,7 +69,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
 
         # Plotar a rota no segundo gráfico
         color = scatter.get_cmap()(scatter.norm(velocidade[sol_index]))
-        ax2.plot(x_coords, y_coords, marker='o', linestyle='-', color=color, label=f'Solução {sol_index}')
+        ax2.plot(x_coords, y_coords, marker='o', linestyle='-', color=color, label=f'Solução {sol_index+1}')
         for j, cidade in enumerate(['Inicial'] + ordem_cidades):
             if j == 1:
                 ax2.text(x_coords[j], y_coords[j], cidade, fontsize=12, ha='right', color='red')
@@ -78,7 +78,7 @@ def plot_results(res, locacoes_cidades, initial_pos, nomes_cidades):
 
         ax2.set_xlabel('X')
         ax2.set_ylabel('Y')
-        ax2.set_title(f'Rota do Drone - Solução {sol_index}')
+        ax2.set_title(f'Rota do Drone - Solução {sol_index+1}')
         ax2.grid(True)
         ax2.legend()
 
